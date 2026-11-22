@@ -497,3 +497,55 @@
   letter-spacing: 0.14em;
   color: var(--c-gray-ink);
 }
+
+/* ---------- 知识库 ---------- */
+.kb-panel {
+  margin: 32px 0 28px;
+  padding: 24px 0 20px;
+  border-top: 1px solid var(--c-rule);
+  border-bottom: 1px solid var(--c-rule);
+}
+.kb-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.kb-row:last-child { margin-bottom: 0; }
+.kb-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--c-rule);
+}
+.kb-report .ant-statistic-title {
+  font-family: var(--f-archive);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.kb-report .ant-statistic-content { font-family: var(--f-display); font-size: 24px; }
+.kb-refused {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--c-gray-ink);
+}
+
+/* 表格沿用档案语气：表头 mono + 细线，不用 antd 默认的中黑体标题 */
+.kb-panel + .ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-family: var(--f-archive);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--c-gray-ink);
+  background: var(--c-paper);
+}
+.ant-table-wrapper .ant-table-tbody > tr > td { font-size: 13px; }

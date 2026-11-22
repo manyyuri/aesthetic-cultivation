@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { DOMAIN_LABEL, MEDIA_MISSING, ROMAN } from '../api/client';
+import { DOMAIN_LABEL, MEDIA_MISSING, ROMAN, mediaUrl } from '../api/client';
 import { useIssue, useItem, useToggleDone } from '../api/hooks';
 import { WallLabel } from '../components/WallLabel';
 import { AskPanel } from '../components/AskPanel';
@@ -27,7 +27,11 @@ export function ItemPage() {
 
       {item.image_url ? (
         <figure className={`plate full ${active ? 'dim' : ''}`}>
-          <img src={item.image_url} alt={item.title_zh} />
+          <img
+            src={mediaUrl(item.image_url) ?? ''}
+            alt={item.title_zh}
+            referrerPolicy="no-referrer"
+          />
         </figure>
       ) : (
         <p className="t-archive plate-missing">

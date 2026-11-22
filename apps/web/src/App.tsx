@@ -17,6 +17,9 @@ export function App() {
           <NavLink to="/settings/subscribe" className={({ isActive }) => (isActive ? 'on' : '')}>
             订阅
           </NavLink>
+          <NavLink to="/kb" className={({ isActive }) => (isActive ? 'on' : '')}>
+            知识库
+          </NavLink>
         </nav>
       </header>
       <Outlet />

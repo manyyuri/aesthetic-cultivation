@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Item } from '../api/client';
-import { DOMAIN_LABEL, ROMAN } from '../api/client';
+import { DOMAIN_LABEL, ROMAN, mediaUrl } from '../api/client';
 import { WallLabel } from './WallLabel';
 import { CitationMark } from './CitationMark';
 import { AskPanel } from './AskPanel';
@@ -37,7 +37,12 @@ export function ItemCard({
         {/* 没有图就不摆一个空相框：宁可是一栏文字，也不要一块"待补"骗版面 */}
         {item.image_url ? (
           <figure className="plate">
-            <img src={item.image_url} alt={item.title_zh} loading="lazy" />
+            <img
+              src={mediaUrl(item.image_url) ?? ''}
+              alt={item.title_zh}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
           </figure>
         ) : null}
         <div>

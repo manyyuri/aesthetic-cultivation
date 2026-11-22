@@ -53,6 +53,12 @@ export const DOMAIN_LABEL: Record<string, string> = {
 
 export const ROMAN = ['', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ'];
 
+/** 远程图走本地代理：热链会 403，且展签不能因为图挂了就空一块 */
+export function mediaUrl(raw?: string | null): string | null {
+  if (!raw) return null;
+  return `/api/media?src=${encodeURIComponent(raw)}`;
+}
+
 /** 缺素材时说的话按领域走：美术馆说图版，音乐会说录音，芭蕾说剧照 */
 export const MEDIA_MISSING: Record<string, string> = {
   art: '图版待补',

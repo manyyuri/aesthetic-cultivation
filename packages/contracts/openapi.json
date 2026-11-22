@@ -158,6 +158,42 @@
         "title": "FeedbackRequest",
         "type": "object"
       },
+      "FetchRequest": {
+        "properties": {
+          "dry_run": {
+            "default": false,
+            "title": "Dry Run",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "title": "FetchRequest",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1546,6 +1582,67 @@
         ]
       }
     },
+    "/api/kb/fetch": {
+      "post": {
+        "operationId": "fetch_api_kb_fetch_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-api-key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Fetch Api Kb Fetch Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fetch",
+        "tags": [
+          "kb"
+        ]
+      }
+    },
     "/api/kb/index": {
       "post": {
         "operationId": "index_api_kb_index_post",
@@ -1770,6 +1867,47 @@
         "summary": "Versions",
         "tags": [
           "kb"
+        ]
+      }
+    },
+    "/api/media": {
+      "get": {
+        "operationId": "media_api_media_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "src",
+            "required": true,
+            "schema": {
+              "maxLength": 2048,
+              "title": "Src",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Media",
+        "tags": [
+          "media"
         ]
       }
     },
@@ -2029,6 +2167,32 @@
         "summary": "Stream",
         "tags": [
           "items"
+        ]
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "operationId": "list_sources_api_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Sources Api Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Sources",
+        "tags": [
+          "kb"
         ]
       }
     },

@@ -122,7 +122,10 @@ class DeepSeekClient:
                 run_id=run_id,
             )
             if not content.strip():
+                # 推理型模型会把 max_tokens 花在思考上：空 content 多半是预算不够，加倍重试
                 log.info("llm_empty_content", extra={"data": {"agent": agent, "attempt": attempt}})
+                max_tokens *= 3
+                metrics.inc("llm_json_repair_total", {"agent": agent})
                 continue
             try:
                 parsed = json.loads(_strip_fence(content))

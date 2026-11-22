@@ -149,7 +149,7 @@ class LlmWriter:
                 user=json.dumps(payload, ensure_ascii=False),
                 schema=WrittenItem,
                 temperature=0.4,
-                max_tokens=900,
+                max_tokens=1500,
             )
             return WrittenItem.model_validate({**base.model_dump(), **data, "anchor": anchor.model_dump()})
         except Exception as exc:  # 任何失败都不影响产期

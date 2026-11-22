@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 from ac_api.config import load_config, settings
 from ac_api.curation.compose import compose_issue
 from ac_api.domain.models import Issue, RetrieveRequest
+from ac_api.llm.answer import answer_question
+from ac_api.llm.grounding import has_any_citation, precheck, uncited_fact_sentences
 from ac_api.llm.stub import get_client
 from ac_api.obs.logger import get_logger
 from ac_api.obs.metrics import metrics
@@ -109,11 +111,13 @@ async def ask_stream(run_id: str, item_id: str, question: str) -> AsyncIterator[
     for event in _drain(events):
         yield event
 
-    if response.evidence_status == "insufficient" or not response.chunks:
-        answer = (
-            "资料里没有能支撑这个问题的原文。"
-            + (f"（{response.missing_hint}）" if response.missing_hint else "")
-        )
+    refusal = precheck(question, [c.content for c in response.chunks])
+    if response.evidence_status == "insufficient" or not response.chunks or refusal:
+        answer = "资料里没有能支撑这个问题的原文。"
+        if response.missing_hint:
+            answer += f"（{response.missing_hint}）"
+        elif refusal and refusal.startswith("year_not_in_evidence:"):
+            answer += f"（资料里没有 {refusal.split(':', 1)[1]} 年的记录）"
         tracer.step("answer", ok=True, summary="拒答 · 证据不足")
         tracer.event("run.finished", status="refused", answer_md=answer)
         for event in _drain(events):
@@ -122,30 +126,31 @@ async def ask_stream(run_id: str, item_id: str, question: str) -> AsyncIterator[
         metrics.inc("run_total", {"status": "refused"})
         return
 
-    evidence = [(c.citation_id, c.locator.anchor or "", c.content) for c in response.chunks]
+    evidence = [
+        (c.citation_id, f"{c.locator.doc_title} · {c.locator.anchor or ''}".strip(" ·"), c.content)
+        for c in response.chunks
+    ]
     client = get_client()
     with _timer() as elapsed:
-        if hasattr(client, "answer"):
-            answer = await asyncio.to_thread(client.answer, question, evidence)
-        else:
-            from ac_api.orchestrator.prompts import read_prompt
-
-            body = json.dumps(
-                {
-                    "question": question,
-                    "evidence": [{"id": i, "anchor": a, "text": t[:800]} for i, a, t in evidence],
-                },
-                ensure_ascii=False,
-            )
-            answer = await asyncio.to_thread(
-                client.chat, read_prompt("answer"), body, agent="answer", run_id=run_id
-            )
+        answer = await asyncio.to_thread(answer_question, question, evidence, client, run_id=run_id)
     tracer.step("answer", latency_ms=elapsed(), summary=answer[:60])
     tracer.event("llm.delta", step="answer", text=answer)
     for event in _drain(events):
         yield event
 
     valid = {c.citation_id for c in response.chunks}
+    if not has_any_citation(answer, valid):
+        # 一句都没引用 ⇒ 等于没有证据支撑，按拒答处理
+        tracer.step("review", ok=False, summary="no_citation")
+        tracer.event("review.verdict", verdict="REFUSE", issues=[], loop=1)
+        tracer.event("run.finished", status="refused", answer_md="资料里没有能支撑这个问题的原文。")
+        for event in _drain(events):
+            yield event
+        runs_store.finish_run(run_id, "refused")
+        metrics.inc("run_total", {"status": "refused"})
+        return
+    for sentence in uncited_fact_sentences(answer, valid):
+        tracer.event("claim.checked", sentence=sentence, citations=[], verdict="unsupported")
     checked = 0
     for sentence in re.split(r"(?<=[。！？\n])", answer):
         if not sentence.strip():

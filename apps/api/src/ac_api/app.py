@@ -16,6 +16,7 @@ from ac_api.api.routes_health import router as health_router
 from ac_api.api.routes_issues import router as issues_router
 from ac_api.api.routes_items import router as items_router
 from ac_api.api.routes_kb import router as kb_router
+from ac_api.api.routes_media import router as media_router
 from ac_api.api.routes_subs import router as subs_router
 from ac_api.obs.logger import get_logger, request_id_var
 from ac_api.obs.metrics import metrics
@@ -72,5 +73,6 @@ app.include_router(health_router)
 app.include_router(issues_router)
 app.include_router(items_router)
 app.include_router(kb_router)
+app.include_router(media_router)
 app.include_router(subs_router)
 app.include_router(eval_router)

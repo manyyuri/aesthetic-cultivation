@@ -12,22 +12,43 @@ from ac_api.config import eval_dir, load_config
 from ac_api.domain.models import RetrieveRequest
 from ac_api.eval.golden import append_golden, load_golden
 from ac_api.eval.metrics import citation_coverage, recall_at_k, reciprocal_rank, refused
-from ac_api.llm.stub import StubClient
+from ac_api.llm.answer import answer_question
+from ac_api.llm.grounding import precheck, uncited_fact_sentences
+from ac_api.llm.stub import REFUSAL, StubClient, get_client
 from ac_api.rag.ingest.pipeline import load_chunks
 from ac_api.rag.retrieve.pipeline import Retriever
 
+# 门槛按"谁来作答"分开：
+#  - 抽取式 stub 只会输出带引用的原文句子，coverage 必须满分；
+#  - 模型会写"资料里没有…"这类缺口说明，这些句子天然没有引用，1.00 不现实。
 THRESHOLDS = {
-    "recall_at_k": 0.85,
-    "mrr": 0.70,
-    "citation_coverage": 1.00,
-    "refusal_accuracy": 0.90,
+    "stub": {"recall_at_k": 0.85, "mrr": 0.70, "citation_coverage": 1.00, "refusal_accuracy": 0.90},
+    "llm": {
+        "recall_at_k": 0.85,
+        "mrr": 0.70,
+        "citation_coverage": 0.80,
+        "refusal_accuracy": 0.90,
+        "faithfulness": 0.85,
+    },
 }
+
+
+def warmup() -> None:
+    """模型冷启动（bge 约 6s）不应计入检索延迟。"""
+    from ac_api.rag.index.embedding import get_embedder
+    from ac_api.rag.retrieve.rerank import get_reranker
+
+    get_embedder().encode(["warmup"])
+    get_reranker().score("warmup", ["warmup"])
 
 
 def run_domain(domain: str, k: int = 5, ci: bool = False) -> dict:
     cases = load_golden(domain)
+    warmup()
     retriever = Retriever()
-    stub = StubClient()
+    # CI 模式固定用抽取式：离线、可复现、不花钱
+    client = StubClient() if ci else get_client()
+    fallback = StubClient()
     rows: list[dict] = []
 
     for case in cases:
@@ -42,8 +63,20 @@ def run_domain(domain: str, k: int = 5, ci: bool = False) -> dict:
         docs = [c.doc_id for c in response.chunks]
         expected = case.get("expect", {}).get("must_cite_doc_ids", [])
         valid = {c.citation_id for c in response.chunks}
-        evidence = [(c.citation_id, c.locator.anchor or "", c.content) for c in response.chunks]
-        answer = stub.answer(case["query"], evidence) if evidence else "资料里没有能支撑这个问题的原文。"
+        evidence = [
+        (c.citation_id, f"{c.locator.doc_title} · {c.locator.anchor or ''}".strip(" ·"), c.content)
+        for c in response.chunks
+    ]
+        refusal = precheck(case["query"], [c.content for c in response.chunks])
+        llm_error: str | None = None
+        if not evidence or refusal:
+            answer = REFUSAL
+        else:
+            try:
+                answer = answer_question(case["query"], evidence, client)
+            except Exception as exc:  # 余额/网络/结构化失败：退回抽取式，并把原因记下来
+                llm_error = f"{type(exc).__name__}: {str(exc)[:120]}"
+                answer = answer_question(case["query"], evidence, fallback)
 
         row = {
             "id": case["id"],
@@ -52,11 +85,15 @@ def run_domain(domain: str, k: int = 5, ci: bool = False) -> dict:
             "retrieved": docs,
             "expected": expected,
             "evidence_status": response.evidence_status,
+            "evidence_for_judge": [{"id": c.citation_id, "text": c.content[:900]} for c in response.chunks],
             "latency_ms": response.latency_ms,
+            "answerer": "stub_fallback" if llm_error else getattr(client, "name", "stub"),
+            "llm_error": llm_error,
             "answer": answer,
             "recall_at_k": recall_at_k(docs, expected, k),
             "rr": reciprocal_rank(docs, expected),
             "citation_coverage": citation_coverage(answer, valid),
+            "uncited": uncited_fact_sentences(answer, valid),
             "refused": refused(answer, case.get("expect", {}).get("key_facts", [])),
         }
         rows.append(row)
@@ -81,12 +118,24 @@ def run_domain(domain: str, k: int = 5, ci: bool = False) -> dict:
         "rows": rows,
         "generated_at": date.today().isoformat(),
     }
+    thresholds = THRESHOLDS["stub" if ci else "llm"]
+    llm_failures = sum(1 for row in rows if row.get("llm_error"))
+    summary["answerer"] = "stub" if ci else getattr(client, "name", "stub")
+    summary["llm_failures"] = llm_failures
+    if llm_failures:
+        summary["llm_error_sample"] = next(row["llm_error"] for row in rows if row.get("llm_error"))
+    summary["thresholds"] = thresholds
     summary["passed"] = {
-        key: summary[key] >= threshold for key, threshold in THRESHOLDS.items()
+        key: round(float(summary.get(key, 0.0)), 4) >= threshold
+        for key, threshold in thresholds.items()
+        if key != "faithfulness"
     }
 
     if not ci:
-        summary["judge"] = _judge(rows, domain)
+        judge = _judge(rows, domain)
+        summary["judge"] = judge
+        if "faithfulness" in judge:
+            summary["passed"]["faithfulness"] = judge["faithfulness"] >= thresholds["faithfulness"]
 
     path = eval_dir() / "reports" / f"{domain}-{date.today().isoformat()}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -112,7 +161,7 @@ def _judge(rows: list[dict], domain: str) -> dict:
 
 class _JudgeSchema(BaseModel):
     supported: bool
-    reason: str = ""
+    problems: list[str] = []
 
 
 def _judge_with_llm(rows: list[dict], domain: str) -> dict:
@@ -122,18 +171,21 @@ def _judge_with_llm(rows: list[dict], domain: str) -> dict:
     from ac_api.orchestrator.prompts import read_prompt
 
     client = DeepSeekClient()
-    prompt = read_prompt("reviewer")
+    prompt = read_prompt("judge")
     scores: list[float] = []
     for row in rows:
         if not row["answerable"]:
             continue
         try:
             data = client.json(
-                system=prompt + "\n\n只回答：{\"supported\": true|false, \"reason\": \"…\"}",
-                user=json.dumps({"answer": row["answer"], "retrieved": row["retrieved"]}, ensure_ascii=False),
+                system=prompt,
+                user=json.dumps(
+                    {"answer": row["answer"], "evidence": row.get("evidence_for_judge", [])},
+                    ensure_ascii=False,
+                ),
                 schema=_JudgeSchema,
                 temperature=0.0,
-                max_tokens=300,
+                max_tokens=2500,
                 agent="judge",
             )
             scores.append(1.0 if data.get("supported") else 0.0)

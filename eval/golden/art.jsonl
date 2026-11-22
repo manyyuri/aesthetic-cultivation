@@ -1,0 +1,12 @@
+{"id":"art_001","domain":"art","query":"古希腊晚期的壁画湿壁画","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["met_256186"],"must_not_claim":[],"key_facts":["Fresco"]}}
+{"id":"art_002","domain":"art","query":"清代的中国画册 纸本水墨","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["met_51776","met_51867","met_51868"],"must_not_claim":[],"key_facts":["Qing"]}}
+{"id":"art_003","domain":"art","query":"十八世纪英国的雕版印刷讽刺画","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["met_670172"],"must_not_claim":[],"key_facts":["engraving"]}}
+{"id":"art_004","domain":"art","query":"希腊化时期的墙面绘画残片","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["met_256186"],"must_not_claim":[],"key_facts":["Classical"]}}
+{"id":"art_005","domain":"art","query":"《印象·日出》的笔触与光","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["art_monet_impression_sunrise_1872"],"must_not_claim":[],"key_facts":["印象派"]}}
+{"id":"art_006","domain":"art","query":"《星月夜》的旋涡与柏树","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["art_van_gogh_starry_night_1889"],"must_not_claim":[],"key_facts":["旋涡"]}}
+{"id":"art_007","domain":"art","query":"《千里江山图》用了什么矿物颜料","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["art_wang_ximeng_qianli_1113"],"must_not_claim":[],"key_facts":["石青","石绿"]}}
+{"id":"art_008","domain":"art","query":"北宋青绿山水代表作品现藏哪个博物馆","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["art_wang_ximeng_qianli_1113"],"must_not_claim":[],"key_facts":["故宫博物院"]}}
+{"id":"art_009","domain":"art","query":"这件作品的拍卖成交价是多少","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["成交价"]}}
+{"id":"art_010","domain":"art","query":"2024 年新入藏的作品编号","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["2024"]}}
+{"id":"art_011","domain":"art","query":"卢浮宫收藏的德拉克洛瓦油画","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["卢浮宫"]}}
+{"id":"art_012","domain":"art","query":"清代册页 纸本","meta_filter":{"period":"Qing dynasty (1644–1911)"},"answerable":true,"expect":{"must_cite_doc_ids":["met_51776","met_51867","met_51868"],"must_not_claim":[],"key_facts":[]}}

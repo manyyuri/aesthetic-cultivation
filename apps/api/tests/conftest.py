@@ -15,7 +15,9 @@ FIXTURES = Path(__file__).parent / "fixtures"
 def sandbox(tmp_path_factory) -> Path:
     root = tmp_path_factory.mktemp("ac-data")
     os.environ["DATA_DIR"] = str(root)
-    os.environ.pop("DEEPSEEK_API_KEY", None)
+    # 环境变量优先于 .env：显式置空，测试绝不真的打模型接口
+    os.environ["DEEPSEEK_API_KEY"] = ""
+    os.environ["DEEPSEEK_MODEL"] = ""
     os.environ["EMBED_PROVIDER"] = "hashed"
     os.environ["RERANK_PROVIDER"] = "lexical"
 

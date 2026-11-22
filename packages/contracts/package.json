@@ -1,0 +1,16 @@
+{
+  "name": "@ac/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "openapi-typescript openapi.json -o src/api.d.ts"
+  },
+  "exports": {
+    ".": "./src/api.d.ts",
+    "./events": "./src/events.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
+}

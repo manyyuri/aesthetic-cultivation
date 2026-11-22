@@ -1,0 +1,117 @@
+/* 设计 token 的 CSS 侧镜像（与 src/tokens.ts 保持一致；改一处必须改两处，CI 由 make check 里的
+   scripts/check_tokens.py 比对 --c-* 变量集合） */
+
+:root {
+  /* 色：纸 + 灯 */
+  --c-paper: #ededea;
+  --c-paper-deep: #e4e4df;
+  --c-ink: #12120f;
+  --c-ink-soft: #3a3a34;
+  --c-gray-ink: #6b6b63;
+  --c-spotlight: #f0c24b;
+  --c-rule: #d3d3cc;
+  --c-music: #243b53;
+  --c-ballet: #8c1d2c;
+
+  /* 族 */
+  --f-display: 'Songti SC', 'Source Han Serif SC', 'Noto Serif CJK SC', serif;
+  --f-latin: 'Iowan Old Style', 'Hoefler Text', Georgia, serif;
+  --f-body: 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  --f-archive: 'SF Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* 版心 */
+  --measure-body: 34em;
+  --rail-width: 96px;
+  --page-max: 1080px;
+  --gutter: 24px;
+
+  /* 节奏 */
+  --open-duration: 700ms;
+  --open-stagger: 80ms;
+  --spot-follow: 400ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* 射灯原点（SpotlightLayer 用 rAF 写这两个变量，不写 background） */
+  --sx: 50%;
+  --sy: 40%;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 三个字体角色 —— 只在这里定义，组件不要自造字体栈 */
+.t-display {
+  font-family: var(--f-display);
+  letter-spacing: -0.02em;
+}
+.t-latin {
+  font-family: var(--f-latin);
+  font-style: italic;
+  color: var(--c-ink-soft);
+}
+/* 编号 / 年份 / 时长 / Op. / №：等宽 + 等宽数字 + 轻微字距 */
+.t-archive {
+  font-family: var(--f-archive);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+/* 眉毛行 / 章节标签 */
+.t-label {
+  font-family: var(--f-archive);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-gray-ink);
+}
+
+/* 焦点：永不 outline:none */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--c-ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* 开卷动效：唯一的入场序列，三幕依次淡入 */
+@keyframes open-line {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.open-seq > * {
+  animation: open-line var(--open-duration) var(--ease) both;
+}
+.open-seq > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.open-seq > *:nth-child(2) {
+  animation-delay: var(--open-stagger);
+}
+.open-seq > *:nth-child(3) {
+  animation-delay: calc(var(--open-stagger) * 2);
+}
+.open-seq > *:nth-child(4) {
+  animation-delay: calc(var(--open-stagger) * 3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -49,6 +49,25 @@ make dev                     # api :8710 / web :5173
 5. **web 报 202（正在排期）**
    当期还没生成。`make issue-build` 后可刷新；首页会给出上一期入口，绝不空白。
 
+## 抓取
+
+| 操作 | 命令 |
+|---|---|
+| 看源 | `make sources` |
+| 探样本 | `make probe SOURCE=met [QUERY=...]` |
+| 试跑 | `make fetch SOURCE=met LIMIT=20 DRY=1` |
+| 真写 | `make fetch SOURCE=met LIMIT=20` → `make ingest DOMAIN=art` |
+| 修数据 | 直接改 `data/raw/{domain}/*.md` 的 front matter，再 `ingest --force` |
+
+常见故障：
+
+- **MusicBrainz 403** → `SOURCES_UA_CONTACT` 没配。
+- **Met 410** → 搜索端点退役，代码里应走 `v1.1/search`；`objects/{id}` 仍在 v1。
+- **`written=0` 全是 `not_public_domain`** → 正常，v1.1 不遵守公版过滤，靠详情复核。换 `QUERY=` 或提高 `LIMIT`。
+- **`missing_meta:period`** → 该作品没有 `period` 也没有 `objectDate`，无解，跳过。
+- **抓完检索不到** → 忘了 `make index DOMAIN=…`；或中文查询打英文语料（见 `docs/SOURCES.md`）。
+- **图是空白/403** → 检查 `/api/media?src=…`：未授权域名 400、上游失败 502；缓存在 `data/media/`，删掉对应文件可强刷。
+
 ## DeepSeek 结构化输出已知坑
 
 - json 模式下 `max_tokens` 太小会返回空 `content` → 客户端会重试一次并降 temperature=0，仍失败则回退 stub writer；

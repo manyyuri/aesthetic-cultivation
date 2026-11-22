@@ -28,6 +28,8 @@ make install                      # 后端 venv + 前端依赖
 cp .env.example .env              # 没有 key 也能跑：自动降级为离线 provider
 make seed                         # 把公有领域摘录灌进 data/raw
 make ingest DOMAIN=ballet && make index DOMAIN=ballet
+make fetch SOURCE=met LIMIT=20    # 从开放数据源抓语料（CC0，带 license）
+make ingest DOMAIN=art && make index DOMAIN=art
 make issue-build                  # 生成今天这一期
 make dev                          # api :8710 + web :5173
 ```
@@ -76,13 +78,15 @@ apps/web/          React 19 + Vite + antd 6：一期 / 合订本 / 单件 / 订�
 packages/ui/       设计 token（纸 + 灯）与字体规则
 packages/contracts/ OpenAPI 生成的 TS 类型 + SSE 事件协议
 eval/golden/       检索 golden（人工标注）
+docs/SOURCES.md    开放数据源：许可、限速、保真度、踩过的坑
 docs/              ARCHITECTURE / RUNBOOK / EVAL / DECISIONS
 multica/           为什么主路径不用 Multica（可选 MCP 接法）
 ```
 
 ## Backlog（明确不做）
 
-多租户/RBAC、Multica 主干化、OCR 训练、Milvus 集群、Celery/Redis、微调 embedding/reranker、自动爬虫、PDF 阅读器、GraphRAG、i18n、移动端 App、积分等级、LLM 自动生成 golden。
+多租户/RBAC、Multica 主干化、OCR 训练、Milvus 集群、Celery/Redis、微调 embedding/reranker、
+网页爬虫、PDF 阅读器、GraphRAG、i18n、移动端 App、积分等级、LLM 自动生成 golden。
 
 ## 文案规则
 

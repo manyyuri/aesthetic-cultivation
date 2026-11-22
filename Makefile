@@ -5,7 +5,7 @@ API_DIR := apps/api
 PORT    ?= 8710
 WEB_PORT?= 5173
 
-.PHONY: help install api-install web-install dev serve preflight contracts check lint test cost \
+.PHONY: help install api-install web-install dev serve preflight contracts check lint test cost web-test \
         ingest index rollback ask issue-build issue-deliver eval eval-ci eval-dry eval-check \
         eval-feedback web-build seed clean
 
@@ -78,7 +78,7 @@ lint: ## ruff（未装则跳过）
 test: ## 后端单测
 	@cd $(API_DIR) && PYTHONPATH=src .venv/bin/pytest -q
 
-check: lint test web-build contracts-verify ## 全量门禁
+check: lint test web-test web-build contracts-verify ## 全量门禁
 	@echo "check ok"
 
 contracts-verify: ## 校验契约生成物无漂移
@@ -86,6 +86,9 @@ contracts-verify: ## 校验契约生成物无漂移
 
 web-build: ## 前端类型检查 + 构建
 	@pnpm --filter @ac/web exec tsc --noEmit && pnpm --filter @ac/web build
+
+web-test: ## 前端单测
+	@pnpm --filter @ac/web test
 
 clean: ## 清掉生成物
 	@rm -rf apps/api/data/chunks apps/api/data/index apps/web/dist

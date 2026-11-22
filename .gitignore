@@ -23,3 +23,4 @@ eval/feedback/
 # os
 .DS_Store
 apps/api/data/raw/
+*.tsbuildinfo

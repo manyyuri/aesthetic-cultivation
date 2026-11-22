@@ -23,6 +23,8 @@ JOBS: dict[str, Job] = {}
 
 
 def submit(kind: str, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> str:
+    # 必须从 async 路由里调用：同步路由会被 FastAPI 丢进线程池，那里没有事件循环
+    asyncio.get_running_loop()
     job_id = f"job_{uuid.uuid4().hex[:10]}"
     JOBS[job_id] = Job(id=job_id, kind=kind)
 

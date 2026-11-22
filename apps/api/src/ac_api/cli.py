@@ -17,7 +17,7 @@ def _print_report(report) -> None:
     print(f"domain={report.domain}")
     print(
         f"  docs  total={report.docs_total} added={report.docs_added} "
-        f"replaced={report.docs_replaced} skipped={report.docs_skipped}"
+        f"replaced={report.docs_replaced} skipped={report.docs_skipped} rejected={report.docs_rejected}"
     )
     print(f"  chunks total={report.chunks_total} rejected={report.chunks_rejected}")
     for reason, count in sorted(report.rejected_reasons.items()):
@@ -56,6 +56,31 @@ def cmd_ask(args: argparse.Namespace) -> int:
         print(f"\n[{chunk.citation_id}] rerank={chunk.scores.get('rerank')} {chunk.source}")
         print(f"  {chunk.content[:220].replace(chr(10), ' ')}…")
     return 0 if response.chunks else 3
+
+
+def cmd_fetch(args: argparse.Namespace) -> int:
+    from ac_api.rag.ingest.sources import get_fetcher
+    from ac_api.rag.ingest.sources.base import SourceError
+
+    try:
+        report = get_fetcher(args.source).fetch(
+            limit=args.limit, query=args.query, dry_run=args.dry_run
+        )
+    except SourceError as exc:
+        print(f"error[{exc.code}]: {exc.message}", file=sys.stderr)
+        return 3
+    print(json.dumps(report.model_dump(), ensure_ascii=False, indent=2))
+    if args.dry_run:
+        return 0
+    return 0 if report.written else 2
+
+
+def cmd_sources(args: argparse.Namespace) -> int:
+    from ac_api.sources import as_public, sources
+
+    rows = [as_public(spec) for spec in sources().sources.values()]
+    print(json.dumps(rows, ensure_ascii=False, indent=2))
+    return 0
 
 
 def cmd_issue_build(args: argparse.Namespace) -> int:
@@ -97,6 +122,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--query", required=True)
     p.add_argument("--top-k", type=int, default=4)
     p.set_defaults(func=cmd_ask)
+
+    p = sub.add_parser("fetch")
+    p.add_argument("--source", required=True)
+    p.add_argument("--limit", type=int, default=10)
+    p.add_argument("--query", default=None)
+    p.add_argument("--dry-run", action="store_true")
+    p.set_defaults(func=cmd_fetch)
+
+    p = sub.add_parser("sources")
+    p.set_defaults(func=cmd_sources)
 
     p = sub.add_parser("issue-build")
     p.add_argument("--date", required=True)

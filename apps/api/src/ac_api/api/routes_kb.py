@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ac_api.api.deps import require_admin
 from ac_api.api.jobs import get as get_job
 from ac_api.api.jobs import submit
-from ac_api.api.schemas import IngestRequest, IndexRequest, RollbackRequest
+from ac_api.api.schemas import FetchRequest, IngestRequest, IndexRequest, RollbackRequest
 from ac_api.config import load_config
 from ac_api.domain.models import RetrieveRequest, RetrieveResponse
 from ac_api.rag.index.builder import active_version, index_root, rollback
@@ -17,19 +17,39 @@ from ac_api.rag.retrieve.pipeline import Retriever
 router = APIRouter(prefix="/api", tags=["kb"])
 
 
+@router.get("/sources")
+def list_sources() -> list[dict]:
+    from ac_api.sources import as_public, sources
+
+    return [as_public(spec) for spec in sources().sources.values()]
+
+
+@router.post("/kb/fetch", dependencies=[Depends(require_admin)])
+async def fetch(body: FetchRequest) -> dict:
+    from ac_api.rag.ingest.sources import get_fetcher
+
+    job_id = submit(
+        "fetch",
+        lambda: get_fetcher(body.source)
+        .fetch(limit=body.limit, query=body.query, dry_run=body.dry_run)
+        .model_dump(),
+    )
+    return {"job_id": job_id}
+
+
 @router.post("/retrieve", response_model=RetrieveResponse)
 def retrieve(body: RetrieveRequest) -> RetrieveResponse:
     return Retriever().retrieve(body)
 
 
 @router.post("/kb/ingest", dependencies=[Depends(require_admin)])
-def ingest(body: IngestRequest) -> dict:
+async def ingest(body: IngestRequest) -> dict:
     job_id = submit("ingest", ingest_domain, body.domain, force=body.force)
     return {"job_id": job_id}
 
 
 @router.post("/kb/index", dependencies=[Depends(require_admin)])
-def index(body: IndexRequest) -> dict:
+async def index(body: IndexRequest) -> dict:
     job_id = submit("index", build_index, body.domain)
     return {"job_id": job_id}
 
@@ -63,6 +83,10 @@ def docs(domain: str = Query(...)) -> dict:
             "source_priority": info.get("source_priority", "secondary_web"),
             "chunk_count": counts.get(doc_id, info.get("chunk_count", 0)),
             "ingested_at": info.get("ingested_at"),
+            "source": info.get("source", "manual"),
+            "license": info.get("license"),
+            "retrieved_at": info.get("retrieved_at"),
+            "source_url": info.get("source_url"),
         }
         for doc_id, info in sorted(manifest.items())
     ]
@@ -71,6 +95,7 @@ def docs(domain: str = Query(...)) -> dict:
 
 @router.get("/kb/docs/{doc_id}/chunks")
 def doc_chunks(doc_id: str, domain: str = Query(...)) -> list[dict]:
+    license_id = (load_manifest(domain).get(doc_id) or {}).get("license")
     return [
         {
             "chunk_id": c.chunk_id,
@@ -78,6 +103,7 @@ def doc_chunks(doc_id: str, domain: str = Query(...)) -> list[dict]:
             "metadata": c.metadata,
             "tokens": c.tokens,
             "content_hash": c.content_hash,
+            "license": license_id,
             "text": c.text,
         }
         for c in read_doc_chunks(domain, doc_id)

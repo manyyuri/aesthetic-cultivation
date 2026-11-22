@@ -25,7 +25,7 @@ def reports(domain: str = Query(default="ballet")) -> dict:
 
 
 @router.post("/run", dependencies=[Depends(require_admin)])
-def run(domain: str = Query(default="ballet"), ci: bool = False) -> dict:
+async def run(domain: str = Query(default="ballet"), ci: bool = False) -> dict:
     from ac_api.eval.runner import run_domain
 
     return {"job_id": submit("eval", run_domain, domain, 5, ci)}

@@ -17,6 +17,13 @@ class RollbackRequest(BaseModel):
     index_version: str
 
 
+class FetchRequest(BaseModel):
+    source: str
+    limit: int = Field(default=10, ge=1, le=100)
+    query: str | None = None
+    dry_run: bool = False
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
     client_request_id: str | None = None

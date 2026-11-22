@@ -6,6 +6,7 @@ PORT    ?= 8710
 WEB_PORT?= 5173
 
 .PHONY: help install api-install web-install dev serve preflight contracts check lint test cost web-test \
+        sources probe fetch fetch-all \
         ingest index rollback ask issue-build issue-deliver eval eval-ci eval-dry eval-check \
         eval-feedback web-build seed clean
 
@@ -38,6 +39,21 @@ contracts: ## 导出 openapi.json 并生成 TS 类型
 
 seed: ## 把 fixtures 灌进 data/raw（可重复执行）
 	@PYTHONPATH=$(API_DIR)/src $(PY) scripts/seed_fixtures.py
+
+sources: ## 列出开放数据源与已入库文档数
+	@PYTHONPATH=$(API_DIR)/src $(PY) -m ac_api.cli sources
+
+probe: ## 探一条样本 SOURCE=met [QUERY=...] [WRITE=1]
+	@PYTHONPATH=$(API_DIR)/src $(PY) scripts/probe_sources.py SOURCE=$(or $(SOURCE),met) $(if $(QUERY),QUERY=$(QUERY),) $(if $(WRITE),WRITE=$(WRITE),)
+
+fetch: ## 抓取 SOURCE=met [LIMIT=10] [QUERY=...] [DRY=1]
+	@PYTHONPATH=$(API_DIR)/src $(PY) -m ac_api.cli fetch --source $(or $(SOURCE),met) \
+	  --limit $(or $(LIMIT),10) $(if $(QUERY),--query "$(QUERY)",) $(if $(DRY),--dry-run,)
+
+fetch-all: ## 按 sources.yaml 顺序逐源抓取 [LIMIT=10]
+	@for s in met musicbrainz internet_archive; do \
+	  PYTHONPATH=$(API_DIR)/src $(PY) -m ac_api.cli fetch --source $$s --limit $(or $(LIMIT),10) || true; \
+	done
 
 ingest: ## 入库 DOMAIN=ballet [FORCE=1]
 	@PYTHONPATH=$(API_DIR)/src $(PY) -m ac_api.cli ingest --domain $(DOMAIN) $(if $(FORCE),--force,)

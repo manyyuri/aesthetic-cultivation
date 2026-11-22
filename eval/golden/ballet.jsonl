@@ -1,0 +1,15 @@
+{"id":"ballet_001","domain":"ballet","query":"《胡桃夹子》首演是哪一年，在哪个剧院","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_nutcracker_premiere_1892"],"must_not_claim":["1893"],"key_facts":["1892","马林斯基"]}}
+{"id":"ballet_002","domain":"ballet","query":"糖梅仙子与王子的双人舞由哪些段落组成","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_nutcracker_premiere_1892"],"must_not_claim":[],"key_facts":["慢板","变奏"]}}
+{"id":"ballet_003","domain":"ballet","query":"《天鹅湖》第二幕是谁编舞","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_swan_lake_1895"],"must_not_claim":["彼季帕独立完成"],"key_facts":["伊万诺夫"]}}
+{"id":"ballet_004","domain":"ballet","query":"《天鹅湖》1877 年在哪里首演","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_swan_lake_1895"],"must_not_claim":[],"key_facts":["莫斯科大剧院","1877"]}}
+{"id":"ballet_005","domain":"ballet","query":"《舞姬》影子王国一场有多少位舞者上场","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_la_bayadere_1877"],"must_not_claim":[],"key_facts":["三十二"]}}
+{"id":"ballet_006","domain":"ballet","query":"《舞姬》的首演年份与编舞家","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_la_bayadere_1877"],"must_not_claim":[],"key_facts":["1877","彼季帕"]}}
+{"id":"ballet_007","domain":"ballet","query":"《吉赛尔》第二幕的维丽丝是什么","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_giselle_1841"],"must_not_claim":[],"key_facts":["维丽丝","婚前死去"]}}
+{"id":"ballet_008","domain":"ballet","query":"《吉赛尔》的作曲是谁，首演在哪一年","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_giselle_1841"],"must_not_claim":[],"key_facts":["亚当作曲","1841"]}}
+{"id":"ballet_009","domain":"ballet","query":"《胡桃夹子》第一幕老鼠王打斗段落用了什么乐器","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_nutcracker_premiere_1892"],"must_not_claim":[],"key_facts":["铜管"]}}
+{"id":"ballet_010","domain":"ballet","query":"《天鹅湖》第三幕黑天鹅双人舞的作用","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_swan_lake_1895"],"must_not_claim":[],"key_facts":["欺骗"]}}
+{"id":"ballet_011","domain":"ballet","query":"《胡桃夹子》与哪部歌剧在同一晚首演","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_nutcracker_premiere_1892"],"must_not_claim":[],"key_facts":["伊奥兰塔"]}}
+{"id":"ballet_012","domain":"ballet","query":"《吉赛尔》首演的剧院是哪里","meta_filter":null,"answerable":true,"expect":{"must_cite_doc_ids":["ballet_giselle_1841"],"must_not_claim":[],"key_facts":["皇家音乐学院剧院"]}}
+{"id":"ballet_013","domain":"ballet","query":"2023 年新版演出的服装设计师是谁","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["2023"]}}
+{"id":"ballet_014","domain":"ballet","query":"《舞姬》1990 年后新增的第三幕编舞由谁完成","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["1990"]}}
+{"id":"ballet_015","domain":"ballet","query":"这部剧在悉尼歌剧院演出时的票价是多少","meta_filter":null,"answerable":false,"expect":{"must_cite_doc_ids":[],"must_not_claim":[],"key_facts":["票价"]}}

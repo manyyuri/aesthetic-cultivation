@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+from functools import lru_cache
+from pathlib import Path
 from typing import Protocol
 
 from ac_api.config import load_config, settings
@@ -15,6 +17,9 @@ log = get_logger("rerank")
 class Reranker(Protocol):
     name: str
 
+    @property
+    def signature(self) -> str: ...
+
     def score(self, query: str, texts: list[str]) -> list[float]: ...
 
 
@@ -22,6 +27,10 @@ class LexicalReranker:
     """词元覆盖率打分，归一到 [0,1]。可解释、可复现、无需模型。"""
 
     name = "lexical"
+
+    @property
+    def signature(self) -> str:
+        return "lexical"
 
     def score(self, query: str, texts: list[str]) -> list[float]:
         # 用词级 token 做分母：字符二元组跨词边界（"舞的""的作"）永远匹配不上，会把覆盖率稀释掉
@@ -51,21 +60,36 @@ class BgeReranker:
     def __init__(self, model: str, device: str, batch_size: int) -> None:
         from sentence_transformers import CrossEncoder  # 可选依赖
 
-        self._model = CrossEncoder(model, device=device, max_length=512)
+        try:
+            self._model = CrossEncoder(model, device=device, max_length=512)
+        except Exception:
+            self._model = CrossEncoder(model, device="cpu", max_length=512)
         self._batch = batch_size
+        self._tag = Path(model).name
+
+    @property
+    def signature(self) -> str:
+        return f"bge:{self._tag}"
 
     def score(self, query: str, texts: list[str]) -> list[float]:
         raw = self._model.predict([(query, t) for t in texts], batch_size=self._batch)
         return [1.0 / (1.0 + math.exp(-float(x))) for x in raw]
 
 
+@lru_cache(maxsize=4)
 def get_reranker() -> Reranker:
     cfg = load_config().providers.get("rerank", {})
     want = (settings().rerank_provider or cfg.get("provider") or "auto").lower()
     if want == "bge":
         bge = cfg.get("bge", {})
+        import os
+
         try:
-            return BgeReranker(bge.get("model", "BAAI/bge-reranker-v2-m3"), bge.get("device", "cpu"), int(bge.get("batch_size", 8)))
+            return BgeReranker(
+                os.environ.get("RERANK_MODEL") or bge.get("model", "BAAI/bge-reranker-v2-m3"),
+                bge.get("device", "cpu"),
+                int(bge.get("batch_size", 8)),
+            )
         except Exception as exc:  # pragma: no cover
             log.info("bge_reranker_unavailable", extra={"data": {"error": str(exc)[:200]}})
     return LexicalReranker()

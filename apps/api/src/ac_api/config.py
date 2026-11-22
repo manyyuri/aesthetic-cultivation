@@ -123,8 +123,13 @@ class Config(BaseModel):
             raise UnknownDomain(name)
         return self.domains[name]
 
-    def min_score_for(self, rerank_provider: str) -> float:
-        return float(self.retrieval.min_score.get(rerank_provider, 0.12))
+    def min_score_for(self, rerank_signature: str) -> float:
+        """阈值按"具体 rerank 模型"取；不同模型的分数量纲完全不同，不能共用。"""
+        table = self.retrieval.min_score
+        if rerank_signature in table:
+            return float(table[rerank_signature])
+        provider = rerank_signature.split(":", 1)[0]
+        return float(table.get(provider, 0.12))
 
 
 class UnknownDomain(Exception):

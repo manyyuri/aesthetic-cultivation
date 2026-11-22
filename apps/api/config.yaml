@@ -30,7 +30,11 @@ retrieval:
   # 阈值随 rerank provider 变化：lexical 分数分布与 cross-encoder 不同，必须分别校准
   min_score:
     lexical: 0.12
+    # bge-reranker-v2-m3：2026-11-22 校准，0.35–0.60 区间 recall@5 都是 1.000，
+    # 取 0.35（保守：语料只有 22 chunk，不把阈值压在样本边界上）
     bge: 0.35
+    # 阈值是"按具体模型"校准的：key 是 RERANK_MODEL 的目录名
+    "bge:mmarco": 0.15                             # 多语言小 cross-encoder，2026-11-22 校准
 
 cache:
   enabled: true

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
+from pathlib import Path
 from typing import Protocol
 
 import numpy as np
@@ -55,11 +57,19 @@ class BgeEmbedder:
     def __init__(self, model: str, device: str, batch_size: int, max_length: int) -> None:
         from sentence_transformers import SentenceTransformer  # 可选依赖
 
-        self._model = SentenceTransformer(model, device=device)
+        try:
+            self._model = SentenceTransformer(model, device=device)
+        except Exception:
+            # mps 上个别算子不支持：退 cpu，不要因此整个 provider 降级
+            self._model = SentenceTransformer(model, device="cpu")
         self._model.max_seq_length = max_length
         self._batch = batch_size
-        self.dim = int(self._model.get_sentence_embedding_dimension())
-        self._tag = model
+        getter = getattr(self._model, "get_embedding_dimension", None) or (
+            self._model.get_sentence_embedding_dimension
+        )
+        self.dim = int(getter())
+        # 指纹只用模型目录名/模型名，别把绝对路径写进去（否则换机器就"指纹不匹配"）
+        self._tag = Path(model).name
 
     @property
     def fingerprint(self) -> str:
@@ -82,13 +92,16 @@ def resolve_provider() -> str:
     return "hashed"  # auto：确定性兜底，避免首次运行时静默下载 2GB 模型
 
 
+@lru_cache(maxsize=4)
 def get_embedder() -> Embedder:
     cfg = load_config().providers.get("embedding", {})
     if resolve_provider() == "bge":
         bge = cfg.get("bge", {})
+        import os
+
         try:
             return BgeEmbedder(
-                bge.get("model", "BAAI/bge-m3"),
+                os.environ.get("EMBED_MODEL") or bge.get("model", "BAAI/bge-m3"),
                 bge.get("device", "cpu"),
                 int(bge.get("batch_size", 16)),
                 int(bge.get("max_length", 512)),

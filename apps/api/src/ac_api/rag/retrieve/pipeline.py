@@ -64,7 +64,9 @@ class Retriever:
         where = validate_filter(spec, req.meta_filter)
         index = load_active(req.domain)  # NoChunks → 上层映射 503
 
-        key = self._cache_key(req.domain, query, top_k, where, index.manifest.index_version)
+        key = self._cache_key(
+            req.domain, query, top_k, where, index.manifest.index_version, req.options
+        )
         if self.config.cache.enabled:
             hit = self.cache.get(key, req.task_id)
             if hit:
@@ -125,7 +127,7 @@ class Retriever:
         min_score = (
             float(req.options["min_score"])
             if req.options.get("min_score")
-            else self.config.min_score_for(self.reranker.name)
+            else self.config.min_score_for(self.reranker.signature)
         )
         kept = [(c, s) for c, s in ranked if s >= min_score]
         if not kept:
@@ -243,10 +245,20 @@ class Retriever:
         )
 
     def _cache_key(
-        self, domain: str, query: str, top_k: int, where: dict | None, version: str
+        self,
+        domain: str,
+        query: str,
+        top_k: int,
+        where: dict | None,
+        version: str,
+        options: dict | None = None,
     ) -> str:
+        # options 必须进键：min_score 不同会得到完全不同的结果（校准脚本就靠它扫阈值）
         raw = json.dumps(
-            [domain, query.lower(), top_k, where, version], ensure_ascii=False, sort_keys=True
+            [domain, query.lower(), top_k, where, version, sorted((options or {}).items())],
+            ensure_ascii=False,
+            sort_keys=True,
+            default=str,
         )
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 

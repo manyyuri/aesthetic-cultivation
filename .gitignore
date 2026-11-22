@@ -26,3 +26,4 @@ apps/api/data/raw/
 *.tsbuildinfo
 apps/api/data/cache/
 apps/api/data/media/
+apps/api/models/

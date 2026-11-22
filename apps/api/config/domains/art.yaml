@@ -1,0 +1,13 @@
+domain: art
+display_name: 美术藏品
+chunker: entry
+required_meta: [object_id, museum, technique, period]
+optional_meta: [artist, material, dimensions, image_url]
+filter_allowlist:
+  museum: { type: str, max_len: 64 }
+  artist: { type: str, max_len: 64 }
+  period: { type: str, max_len: 64 }
+  technique: { type: str, max_len: 64 }
+  object_id: { type: str, max_len: 64 }
+source_priority: [authoritative_book, premiere_archive, program_or_disc, secondary_web]
+citation_style: "《{doc_title}》{locator}"

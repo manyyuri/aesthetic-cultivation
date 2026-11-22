@@ -1,0 +1,14 @@
+domain: ballet
+display_name: 芭蕾舞剧考据
+chunker: act_scene
+required_meta: [work, choreographer, premiere_year, acts]
+optional_meta: [scene, cast, ballet_company, version_note]
+filter_allowlist:
+  premiere_year: { type: int, min: 1700, max: 2100 }
+  choreographer: { type: str, max_len: 64 }
+  work: { type: str, max_len: 128 }
+  act: { type: int, min: 1, max: 6 }
+  ballet_company: { type: str, max_len: 64 }
+retrieval: { recall_pool: 60 }
+source_priority: [premiere_archive, authoritative_book, program_or_disc, secondary_web]
+citation_style: "《{doc_title}》{locator}"

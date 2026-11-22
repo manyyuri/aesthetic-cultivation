@@ -1,0 +1,39 @@
+server:
+  host: 127.0.0.1
+  port: 8710
+  request_timeout_s: 20
+auth:
+  admin_localhost_only: true
+
+providers:
+  llm:
+    provider: auto          # auto | deepseek | stub
+    timeout_s: 60
+  embedding:
+    provider: auto          # auto | bge | hashed
+    hashed_dim: 1024
+    bge: { model: BAAI/bge-m3, device: mps, batch_size: 16, max_length: 512 }
+    hashed_model_tag: v1
+  rerank:
+    provider: auto          # auto | bge | lexical
+    bge: { model: BAAI/bge-reranker-v2-m3, device: mps, batch_size: 8 }
+
+retrieval:
+  top_k_default: 4
+  top_k_max: 10
+  recall_pool: 50
+  rrf_k: 60
+  rerank_pool: 30
+  expand_parent: true
+  max_chunks_per_doc: 3   # 单件追问常常要同一份档案的相邻幕次/乐章
+  budget_tokens: 3000
+  # 阈值随 rerank provider 变化：lexical 分数分布与 cross-encoder 不同，必须分别校准
+  min_score:
+    lexical: 0.12
+    bge: 0.35
+
+cache:
+  enabled: true
+  ttl_s: 600
+  max_entries: 512
+  task_scope_ttl_s: 900

@@ -1,0 +1,24 @@
+daily:
+  minute_budget: 20
+  items: 3
+  domain_mix: [art, music, ballet]
+  hook_max_chars: 60
+weekly:
+  minute_budget: 60
+  items: 6
+  domain_mix: [art, art, music, music, ballet, ballet]
+  extras: [essay, revisit]
+  hook_max_chars: 70
+rules:
+  min_evidence_status: found
+  no_repeat_within_days: 90
+  no_repeat_doc_within_days: 14
+  require_distinct_docs: true
+  max_candidates: 24
+  max_rebuild: 2
+  hook_max_sentences: 2
+  marketing_words: [震撼, 绝美, 必看, 不可错过, 天花板, 封神, 惊艳, 顶级, 教科书级]
+  hedge_words: [据说, 相传, 有人认为, 据称]
+schedule:
+  build_at: "05:00"
+  deliver_at: "07:30"

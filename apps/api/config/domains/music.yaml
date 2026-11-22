@@ -1,0 +1,14 @@
+domain: music
+display_name: 古典音乐会
+chunker: work_version
+required_meta: [composer, work, duration_s]
+optional_meta: [movement, conductor, orchestra, label, release_year, key]
+filter_allowlist:
+  composer: { type: str, max_len: 64 }
+  work: { type: str, max_len: 128 }
+  conductor: { type: str, max_len: 64 }
+  orchestra: { type: str, max_len: 64 }
+  release_year: { type: int, min: 1850, max: 2100 }
+  movement: { type: int, min: 1, max: 12 }
+source_priority: [premiere_archive, authoritative_book, program_or_disc, secondary_web]
+citation_style: "《{doc_title}》{locator}"

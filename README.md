@@ -58,8 +58,10 @@ make dev                          # api :8710 + web :5173
 | refusal_accuracy | **1.000** | ≥ 0.90 |
 | p95 检索延迟 | **385 ms** | ≤ 800 ms |
 
-语料规模诚实说明：4 份芭蕾档案 / 12 个 chunk，离线 `hashed` embedding + `lexical` rerank。
-这是**链路正确性**的证据，不是检索质量的证据。接真模型后必须重跑并重新校准阈值，见 `docs/EVAL.md`。
+语料规模诚实说明：芭蕾 4 份 / 12 chunk、美术 8 份 / 22 chunk（含 5 份 Met CC0 抓取）。
+默认已接 `bge-m3` + `bge-reranker-v2-m3`（阈值 0.35，经校准）；无权重时自动退 `hashed` + `lexical`。
+art 的中文查询打英文条目：`hashed` 下 recall 0.556，`bge-m3` 下 **1.000**。
+LLM 作答的 faithfulness 与判官噪声说明见 `docs/EVAL.md`。
 
 ## 六个关键判断
 

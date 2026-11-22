@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": false,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": { "@ac/ui": ["../../packages/ui/src/tokens.ts"], "@ac/contracts": ["../../packages/contracts/src/api.d.ts"], "@ac/contracts/events": ["../../packages/contracts/src/events.ts"] }
+  },
+  "include": ["src"]
+}

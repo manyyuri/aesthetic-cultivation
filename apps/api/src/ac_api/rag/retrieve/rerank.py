@@ -60,6 +60,10 @@ class BgeReranker:
     def __init__(self, model: str, device: str, batch_size: int) -> None:
         from sentence_transformers import CrossEncoder  # 可选依赖
 
+        if Path(model).is_dir():
+            import os
+
+            os.environ.setdefault("HF_HUB_OFFLINE", "1")
         try:
             self._model = CrossEncoder(model, device=device, max_length=512)
         except Exception:

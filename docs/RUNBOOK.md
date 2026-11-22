@@ -68,7 +68,18 @@ make dev                     # api :8710 / web :5173
 - **抓完检索不到** → 忘了 `make index DOMAIN=…`；或中文查询打英文语料（见 `docs/SOURCES.md`）。
 - **图是空白/403** → 检查 `/api/media?src=…`：未授权域名 400、上游失败 502；缓存在 `data/media/`，删掉对应文件可强刷。
 
+## 模型与作答
+
+- 启动时会预热 embedding / rerank（约 10–15 s，日志 `warmup_done`）：第一个请求不再为加载权重买单。
+  未预热时首个请求可能卡 6–10 s（MPS 上更久）。
+- 本地权重目录会自动设 `HF_HUB_OFFLINE=1`：否则 `SentenceTransformer(本地路径)` 仍会去 HF 绕一圈，
+  代理卡住能把请求挂到十几分钟（实测踩到过）。
+- **模型不可用时退回抽取式作答**，run 仍会正常收尾（`answer.fallback` 步骤可见），不会卡在 running。
+
 ## DeepSeek 结构化输出已知坑
+
+- **402 Insufficient Balance**：不重试（重试只会一直失败）。命中后作答退回 stub，评测里记 `llm_failures`；
+  充值后 `make eval DOMAIN=art` 即恢复模型作答。
 
 - json 模式下 `max_tokens` 太小会返回空 `content` → 客户端会重试一次并降 temperature=0，仍失败则回退 stub writer；
 - 推理型模型可能不支持 `response_format` / function calling → 走两段式（先输出检索计划 JSON，编排器执行）；

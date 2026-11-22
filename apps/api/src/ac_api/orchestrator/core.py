@@ -132,7 +132,14 @@ async def ask_stream(run_id: str, item_id: str, question: str) -> AsyncIterator[
     ]
     client = get_client()
     with _timer() as elapsed:
-        answer = await asyncio.to_thread(answer_question, question, evidence, client, run_id=run_id)
+        try:
+            answer = await asyncio.to_thread(answer_question, question, evidence, client, run_id=run_id)
+        except Exception as exc:  # 余额/网络/结构化失败：退回抽取式，别让 run 卡在 running
+            from ac_api.llm.stub import StubClient
+
+            log.info("answer_llm_fallback", extra={"data": {"error": str(exc)[:160]}})
+            tracer.step("answer.fallback", ok=True, summary=f"模型不可用：{str(exc)[:60]}")
+            answer = await asyncio.to_thread(answer_question, question, evidence, StubClient())
     tracer.step("answer", latency_ms=elapsed(), summary=answer[:60])
     tracer.event("llm.delta", step="answer", text=answer)
     for event in _drain(events):

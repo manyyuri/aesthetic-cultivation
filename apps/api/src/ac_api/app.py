@@ -25,10 +25,26 @@ from ac_api.store.db import init_db
 log = get_logger("http")
 
 
+def _warmup() -> None:
+    """启动时把 embedding / rerank 权重加载好：否则第一个请求要等 6–10 秒（MPS 上更久）。"""
+    try:
+        from ac_api.rag.index.embedding import get_embedder
+        from ac_api.rag.retrieve.rerank import get_reranker
+
+        get_embedder().encode(["warmup"])
+        get_reranker().score("warmup", ["warmup"])
+        log.info("warmup_done")
+    except Exception as exc:  # 预热失败不许挡住启动
+        log.info("warmup_failed", extra={"data": {"error": str(exc)[:200]}})
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     log.info("app_start", extra={"data": {"version": __version__}})
+    import asyncio
+
+    await asyncio.to_thread(_warmup)
     yield
     log.info("app_stop")
 

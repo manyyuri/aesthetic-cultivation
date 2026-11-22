@@ -34,6 +34,7 @@ async def ask(item_id: str, body: AskRequest) -> dict:
             async for event in ask_stream(run_id, item_id, body.question):
                 hub.publish(run_id, event)
         except Exception as exc:  # 事件流里也要有终止事件
+            runs_store.finish_run(run_id, "failed", str(exc)[:300])
             hub.publish(
                 run_id,
                 {

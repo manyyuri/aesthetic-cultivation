@@ -57,6 +57,10 @@ class BgeEmbedder:
     def __init__(self, model: str, device: str, batch_size: int, max_length: int) -> None:
         from sentence_transformers import SentenceTransformer  # 可选依赖
 
+        if Path(model).is_dir():
+            import os
+
+            os.environ.setdefault("HF_HUB_OFFLINE", "1")
         try:
             self._model = SentenceTransformer(model, device=device)
         except Exception:

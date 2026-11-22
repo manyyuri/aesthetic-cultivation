@@ -12,7 +12,10 @@ REFUSAL = "资料里没有能支撑这个问题的原文。可以换个问法，
 # 这些是"提问用语"，不是实体；判断"问句里的实体在不在证据里"时不算数
 GENERIC = frozenset(
     "是谁 什么 哪些 哪个 多少 怎么 怎样 为什么 如何 作用 组成 要点 特点 年份 年代 时间 地点 哪里 在哪 何时 何地 时候 "
-    "内容 结构 这部 这个 那部 那个 一下 之后 以前 以后 年 月 日 幕 场 位".split()
+    "内容 结构 这部 这个 那部 那个 一下 之后 以前 以后 年 月 日 幕 场 位 "
+    # 这些是"字段名"，不是实体：问'材质与年代'不该因为没有这两个字而拒答
+    "作品 材质 年代 作者 尺寸 馆藏 时代 风格 流派 描述 简介 背景 技法 材料 "
+    "这件 这幅 那幅 颜色 构图 主题 特点 意义 影响 价值 地位 评价 故事".split()
 )
 
 
@@ -48,6 +51,12 @@ class StubClient:
         missing = [t for t in q if t not in corpus_tokens]
         if q and len(missing) / len(q) > 1 / 3:
             return REFUSAL
+
+        if not q:
+            # 问的是"这件东西是什么"：没有实体词可匹配，就给条目开头两句（仍是原文 + 引用）
+            citation, _section, text = evidence[0]
+            opening = "".join(SENT_RE.findall(text)[:2]) or text[:120]
+            return f"{opening.rstrip('。！？!?；;')} [{citation}]。"
 
         scored: list[tuple[float, str, str]] = []
         for citation, _anchor, text in evidence:

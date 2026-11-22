@@ -1,0 +1,25 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# node
+node_modules/
+dist/
+.vite/
+
+# runtime data
+apps/api/data/chunks/
+apps/api/data/index/
+apps/api/data/usage/
+apps/api/var/
+eval/reports/
+eval/feedback/
+.env
+
+# os
+.DS_Store
+apps/api/data/raw/

@@ -1,0 +1,13 @@
+{
+  "name": "aesthetic-cultivation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "make dev",
+    "web": "pnpm --filter @ac/web dev",
+    "build": "pnpm --filter @ac/web build",
+    "contracts": "make contracts",
+    "test": "make check"
+  },
+  "packageManager": "pnpm@10.0.0"
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  复制到 ~/Library/LaunchAgents/com.aesthetic.issue.plist 并 load。
+  只做两件事：05:00 建期、07:30 推送。不用 Celery / Redis。
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aesthetic.issue</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>cd /Users/junyingli/project/AI/aesthetic-cultivation &amp;&amp; make issue-build &amp;&amp; make issue-deliver</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>5</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/ac-issue.log</string>
+  <key>StandardErrorPath</key><string>/tmp/ac-issue.err</string>
+</dict>
+</plist>

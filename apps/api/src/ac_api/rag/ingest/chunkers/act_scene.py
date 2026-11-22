@@ -18,6 +18,9 @@ class ActSceneChunker:
     def split(self, doc: LoadedDoc, spec: DomainSpec) -> list[ChunkDraft]:
         drafts: list[ChunkDraft] = []
         current_act: int | None = doc.meta.get("act") if isinstance(doc.meta.get("act"), int) else None
+        if current_act is None and isinstance(doc.meta.get("acts"), int) and doc.meta["acts"] >= 1:
+            # 论著/节目册这类资料没有"幕"的划分，但档案里声明了幕数：保守归到第一幕
+            current_act = 1
         for section in doc.sections:
             heading = section.heading or ""
             act, scene = current_act, None

@@ -8,12 +8,13 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from ac_api.config import chunks_dir, load_config, raw_dir
-from ac_api.domain.models import Chunk, content_hash
+from ac_api.domain.models import Chunk, ChunkDraft, content_hash
 from ac_api.rag.ingest import manifest as manifest_mod
 from ac_api.rag.ingest.chunkers import get_chunker
 from ac_api.rag.ingest.loaders.md import load_markdown
 from ac_api.rag.ingest.tagger import tag
 from ac_api.obs.logger import get_logger
+from ac_api.sources import normalize_license
 
 log = get_logger("ingest")
 
@@ -24,6 +25,7 @@ class IngestReport(BaseModel):
     docs_added: int = 0
     docs_skipped: int = 0
     docs_replaced: int = 0
+    docs_rejected: int = 0
     chunks_total: int = 0
     chunks_rejected: int = 0
     rejected_reasons: dict[str, int] = Field(default_factory=dict)
@@ -31,6 +33,31 @@ class IngestReport(BaseModel):
     def add_reject(self, reason: str) -> None:
         self.chunks_rejected += 1
         self.rejected_reasons[reason] = self.rejected_reasons.get(reason, 0) + 1
+
+
+MIN_CHUNK_CHARS = 40
+
+
+def merge_short_drafts(drafts: list[ChunkDraft], min_chars: int = MIN_CHUNK_CHARS) -> list[ChunkDraft]:
+    """把过短的小节并进上一节，而不是丢掉它。
+
+    "收藏"这类只有一句话的小节信息量真实存在，直接按 too_short 丢弃等于静默丢事实；
+    但只有同一幕/同一乐章内才合并，避免把两场混成一段。
+    """
+    merged: list[ChunkDraft] = []
+    for draft in drafts:
+        if (
+            len(draft.text) < min_chars
+            and merged
+            and merged[-1].metadata.get("act") == draft.metadata.get("act")
+            and merged[-1].metadata.get("movement") == draft.metadata.get("movement")
+        ):
+            merged[-1] = merged[-1].model_copy(
+                update={"text": f"{merged[-1].text}\n\n{draft.text}".strip()}
+            )
+            continue
+        merged.append(draft)
+    return merged
 
 
 def chunks_path(domain: str, doc_id: str) -> Path:
@@ -75,7 +102,15 @@ def ingest_domain(domain: str, *, force: bool = False, source_dir: Path | None =
                 seen_hashes.setdefault(chunk.content_hash, chunk.doc_id)
             continue
 
-        drafts = chunker.split(doc, spec)
+        # license 是硬闸门：没有可核对许可的文档不进库（否则展签上的出处不可核查）
+        license_id = normalize_license(doc.license)
+        if not license_id:
+            report.docs_rejected += 1
+            report.add_reject("missing_license")
+            log.info("doc_rejected", extra={"domain": domain, "data": {"doc_id": doc.doc_id, "reason": "missing_license"}})
+            continue
+
+        drafts = merge_short_drafts(chunker.split(doc, spec))
         chunks: list[Chunk] = []
         for ordinal, draft in enumerate(drafts):
             meta, missing = tag(draft, spec)
@@ -97,11 +132,13 @@ def ingest_domain(domain: str, *, force: bool = False, source_dir: Path | None =
                 metadata=meta,
                 source_priority=doc.source_priority,
             ).finalize()
-            if len(chunk.text) < 40:
+            if len(chunk.text) < MIN_CHUNK_CHARS:
                 report.add_reject("too_short")
                 continue
+            # 只对长段落做跨文档去重：短的结构化字段（如馆方"形制与分类"行）本来就会相似，
+            # 那是元数据不是重复内容；检索层还有一层 content_hash 去重兜底。
             owner = seen_hashes.get(chunk.content_hash)
-            if owner and owner != doc.doc_id:
+            if owner and owner != doc.doc_id and len(chunk.text) >= 120:
                 report.add_reject(f"duplicate_of:{owner}")
                 continue
             seen_hashes[chunk.content_hash] = doc.doc_id
@@ -122,6 +159,11 @@ def ingest_domain(domain: str, *, force: bool = False, source_dir: Path | None =
             "path": str(path),
             "title": doc.title,
             "source_priority": doc.source_priority,
+            "source": doc.source,
+            "license": license_id,
+            "external_id": doc.external_id,
+            "retrieved_at": doc.retrieved_at,
+            "source_url": doc.source_url,
         }
 
     manifest_mod.save_manifest(domain, manifest)

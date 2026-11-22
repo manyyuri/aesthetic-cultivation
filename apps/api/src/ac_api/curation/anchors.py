@@ -41,18 +41,20 @@ def _cue(sentence: str) -> str:
 
 
 def build_art_anchor(chunks: list[Chunk], meta: dict) -> Anchor | None:
-    cue = None
+    if isinstance(meta.get("anchor_cue"), str) and meta["anchor_cue"].strip():
+        cue = meta["anchor_cue"].strip()[:16]
+        return Anchor(kind="look", label=f"看这几处：{cue}", spec={"cue": cue, "region": None})
+
     for sentence in (s for chunk in chunks for s in _sentences(chunk.text)):
         if any(word in sentence for word in ("笔触", "颜色", "色", "光", "线", "构图", "旋涡")):
-            cue = sentence
-            break
-    if not cue:
-        sentences = [s for chunk in chunks for s in _sentences(chunk.text)]
-        cue = sentences[0] if sentences else None
-    if not cue:
-        return None
-    short = _cue(cue)
-    return Anchor(kind="look", label=f"看这几处：{short}", spec={"cue": short, "region": None})
+            cue = _cue(sentence)
+            return Anchor(kind="look", label=f"看这几处：{cue}", spec={"cue": cue, "region": None})
+
+    # 抓来的作品元数据没有中文视觉描述：给"看这件＋作品名"，比硬造一个"看这几处"诚实
+    title = str(meta.get("display_zh") or meta.get("title_orig") or "").strip()
+    if title:
+        return Anchor(kind="look", label=f"看这件：{title}", spec={"cue": title[:16], "region": None})
+    return None
 
 
 def build_music_anchor(chunks: list[Chunk], meta: dict) -> Anchor | None:
@@ -60,20 +62,42 @@ def build_music_anchor(chunks: list[Chunk], meta: dict) -> Anchor | None:
     if not isinstance(duration, int) or duration <= 0:
         return None
     movements = sorted({c.metadata.get("movement") for c in chunks if c.metadata.get("movement")})
-    if movements:
-        total = len(movements)
-        pick: int | None = movements[1] if len(movements) >= 2 else movements[0]
-        span = duration / total
+    pick: int | None = movements[1] if len(movements) >= 2 else (movements[0] if movements else None)
+    approx = True
+    from_s = 0
+    to_s = min(180, duration)
+
+    # 有真实音轨时长就用真值（MusicBrainz 抓来的数据走到这里），否则退回等比估算
+    exact_chunk = next(
+        (
+            c
+            for c in chunks
+            if c.metadata.get("movement") == pick
+            and isinstance(c.metadata.get("movement_from_s"), int)
+            and isinstance(c.metadata.get("movement_duration_s"), int)
+        ),
+        None,
+    )
+    if exact_chunk is not None:
+        from_s = int(exact_chunk.metadata["movement_from_s"])
+        exact_len = int(exact_chunk.metadata["movement_duration_s"])
+        to_s = min(from_s + min(180, exact_len), duration)
+        approx = False
+    elif movements:
+        span = duration / len(movements)
         from_s = int((int(pick) - 1) * span)
         to_s = min(int(from_s + min(180, span)), duration)
-    else:
-        # 没有乐章结构（如变奏曲）：给"开头三分钟"，不假装有乐章编号
-        pick = None
-        from_s, to_s = 0, min(180, duration)
+
     if to_s - from_s < 60:
         return None
-    label = f"听第{_cn(int(pick))}乐章 · {mmss(from_s)}–{mmss(to_s)}" if pick else f"听开头 · {mmss(from_s)}–{mmss(to_s)}"
-    spec = {"from_s": from_s, "to_s": to_s, "approx": True}
+    label = (
+        f"听第{_cn(int(pick))}乐章 · {mmss(from_s)}–{mmss(to_s)}"
+        if pick
+        else f"听开头 · {mmss(from_s)}–{mmss(to_s)}"
+    )
+    if approx:
+        label += "（约）"
+    spec = {"from_s": from_s, "to_s": to_s, "approx": approx}
     if pick:
         spec["movement"] = int(pick)
     return Anchor(kind="listen", label=label, spec=spec)

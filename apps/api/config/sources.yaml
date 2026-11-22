@@ -1,0 +1,69 @@
+# 开放数据源契约。source 名即 doc_id 前缀，也是 CLI 的 SOURCE= 值。
+# 新增源：这里加一条 + rag/ingest/sources/ 里加一个 fetcher 并注册。
+
+allow:
+  # 只收这几种；其余一律拒（退出码 3），不允许"看起来像公版"就放进来
+  licenses:
+    - CC0-1.0
+    - Public-Domain-Mark-1.0
+    - public-domain
+    - CC-BY-4.0
+    - CC-BY-SA-4.0
+  on_violation: refuse
+
+sources:
+  met:
+    domain: art
+    kind: api
+    fetcher: met
+    license: CC0-1.0
+    homepage: https://www.metmuseum.org
+    rate_limit_rps: 2
+    user_agent: "aesthetic-cultivation/0.1 (${SOURCES_UA_CONTACT})"
+    require_meta: [object_id, museum, technique, period]
+    source_priority: authoritative_book
+    media_hosts: [images.metmuseum.org]   # 只允许代理这些域名的图，防 SSRF
+    mapping:
+      objectID: object_id
+      title: entry_title
+      artistDisplayName: artist
+      medium: technique
+      classification: material
+      primaryImageSmall: image_url
+      objectURL: source_url
+
+  musicbrainz:
+    domain: music
+    kind: api
+    fetcher: musicbrainz
+    license: CC0-1.0            # 元数据 CC0；录音只引用链接，不分发
+    homepage: https://musicbrainz.org
+    rate_limit_rps: 1           # 官方硬性要求 1 req/s
+    user_agent: "aesthetic-cultivation/0.1 (${SOURCES_UA_CONTACT})"
+    require_meta: [composer, work, duration_s]
+    source_priority: program_or_disc
+    max_tracks: 12              # 轨道过多（合集）说明不是单部作品，拒
+
+  internet_archive:
+    domain: ballet
+    kind: api
+    fetcher: ia
+    license: public-domain
+    homepage: https://archive.org
+    rate_limit_rps: 1
+    user_agent: "aesthetic-cultivation/0.1 (${SOURCES_UA_CONTACT})"
+    require_meta: [work, choreographer, premiere_year, acts]
+    source_priority: secondary_web
+    default_acts: 1             # 论著类资料没有幕数：保守取 1，并在 version_note 留痕
+    max_chars: 6000
+    # 公版状态无法从 licenseurl 字段判定（19 世纪扫描件往往没有 licenseurl），
+    # 所以这里只接受"人工挑过的 identifier"，由人写 license 与领域元数据。
+    identifiers: []
+    # 示例（需要人工核对公版状态后再填）：
+    # - id: danceman251
+    #   license: public-domain
+    #   work: "The Code of Terpsichore"
+    #   choreographer: "Carlo Blasis"
+    #   premiere_year: 1830
+    #   acts: 1
+    #   version_note: "1830 年舞蹈论著，非具体制作"

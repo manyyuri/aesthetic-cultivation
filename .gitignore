@@ -24,3 +24,5 @@ eval/feedback/
 .DS_Store
 apps/api/data/raw/
 *.tsbuildinfo
+apps/api/data/cache/
+apps/api/data/media/

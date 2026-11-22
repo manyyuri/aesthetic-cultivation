@@ -28,6 +28,8 @@ class WorkVersionChunker:
                 subtitle = (match.group(2) or "").strip()
                 if subtitle:
                     meta["movement_name"] = subtitle
+            # 小节级元数据（音轨时长/起点）覆盖文档级
+            meta.update(section.meta or {})
             parent = f"{doc.doc_id}:work"
             drafts.extend(
                 build_drafts(
